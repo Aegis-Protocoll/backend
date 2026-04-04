@@ -3,7 +3,12 @@ import cors from "cors"
 import { ethers } from "ethers"
 import { runScoringPipeline } from "./pipeline"
 import { writeRiskScore, readRiskProfile, _getProvider } from "./writer"
-import { getScoreHistory } from "./db"
+import { getScoreHistory, getCachedScore } from "./db"
+
+const DEMO_WALLETS = new Set([
+  "0x2222222222222222222222222222222222222222",
+  "0x1111111111111111111111111111111111111111",
+].map(w => w.toLowerCase()))
 
 export const app = express()
 app.use(cors())
@@ -29,6 +34,10 @@ app.post("/v1/risk/analyze", async (req, res) => {
     const { wallet } = req.body
     if (!wallet || !ethers.isAddress(wallet))
       return res.status(400).json({ error: "Valid wallet address required" })
+    if (DEMO_WALLETS.has(wallet.toLowerCase())) {
+      const cached = await getCachedScore(wallet)
+      if (cached) return res.json({ wallet, ...cached, status: "demo_seed" })
+    }
     const result = await runScoringPipeline(wallet, _getProvider())
     const txHash = await writeRiskScore(
       wallet, result.score, result.flags, result.reasoning,
@@ -54,6 +63,24 @@ app.post("/v1/risk/payment", async (req, res) => {
       recommendation: maxScore >= 7 ? "block" : maxScore >= 4 ? "flag" : "allow",
       flags: [...new Set([...fromProfile.flags, ...toProfile.flags])]
     })
+  } catch (err: any) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+app.post("/v1/risk/mock", async (req, res) => {
+  try {
+    const { wallet, score, flags, reasoning, hopDistance } = req.body
+    if (!wallet || !ethers.isAddress(wallet))
+      return res.status(400).json({ error: "Valid wallet address required" })
+    const s = Math.max(1, Math.min(10, parseInt(score) || 5))
+    const f = Array.isArray(flags) ? flags : []
+    const r = reasoning || (s >= 7 ? "High risk wallet flagged by analyst" : "Low risk wallet")
+    const h = parseInt(hopDistance) || (s >= 7 ? 1 : 4)
+    const level = s === 1 ? "VERY_LOW" : s <= 3 ? "LOW" : s <= 6 ? "MEDIUM" : s <= 9 ? "HIGH" : "CRITICAL"
+    const txHash = await writeRiskScore(wallet, s, f, r, h, level, "mock_seed")
+    DEMO_WALLETS.add(wallet.toLowerCase())
+    res.json({ wallet, score: s, level, flags: f, reasoning: r, hopDistance: h, txHash, status: "mocked" })
   } catch (err: any) {
     res.status(500).json({ error: err.message })
   }
