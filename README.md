@@ -4,14 +4,14 @@
 
 **Hackathon:** HashKey Chain Horizon 2026 | **Tracks:** AI + DeFi | **Chain:** HashKey Chain Testnet (133)
 
-[Docs](https://aegisprotocol-1.gitbook.io/aegisprotocol) | [Landing](https://aegis-protocol-hsk.vercel.app) | [Demo](https://aegis-demo-hsk.vercel.app)
+[Docs](https://aegisprotocol-1.gitbook.io/aegisprotocol) | [Landing](https://aegis-protocol-landing.vercel.app) | [Demo](https://aegis-protocol-demo.vercel.app)
 
 ---
 
 ## Live API
 
 ```
-https://aegis-api-hsk.vercel.app
+https://aegis-protocol-api.vercel.app
 ```
 
 ---
@@ -96,7 +96,7 @@ clamped to [1, 10]
 ### Example Request/Response
 
 ```bash
-curl https://aegis-api-hsk.vercel.app/v1/risk/0x2222222222222222222222222222222222222222
+curl https://aegis-protocol-api.vercel.app/v1/risk/0x2222222222222222222222222222222222222222
 ```
 
 ```json
