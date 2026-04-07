@@ -37,6 +37,9 @@ app.post("/v1/risk/analyze", async (req, res) => {
     if (DEMO_WALLETS.has(wallet.toLowerCase())) {
       const cached = await getCachedScore(wallet)
       if (cached) return res.json({ wallet, ...cached, status: "demo_seed" })
+      // Cache expired — read from chain, never re-run pipeline on demo wallets
+      const profile = await readRiskProfile(wallet)
+      if (profile && profile.score > 0) return res.json({ wallet, ...profile, status: "demo_seed" })
     }
     const result = await runScoringPipeline(wallet, _getProvider())
     const txHash = await writeRiskScore(
